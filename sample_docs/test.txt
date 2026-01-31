@@ -1,0 +1,20 @@
+
+# RAG Architecture Overview
+
+Retrieval-Augmented Generation (RAG) combines the power of large language models 
+with external knowledge retrieval. This approach addresses key limitations of 
+standalone LLMs.
+
+## Key Components
+
+1. Document Store: Holds your knowledge base
+2. Embedding Model: Converts text to vectors
+3. Vector Database: Enables similarity search
+4. LLM: Generates final response
+
+## Benefits
+
+- Reduces hallucinations by grounding responses in real documents
+- Enables access to private or up-to-date information
+- Provides citations and source attribution
+- More cost-effective than fine-tuning
