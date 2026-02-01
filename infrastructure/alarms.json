@@ -1,0 +1,76 @@
+{
+  "alarms": [
+    {
+      "name": "RAG-Query-Errors",
+      "description": "Alert when Query Lambda has errors",
+      "metric": "Errors",
+      "namespace": "AWS/Lambda",
+      "dimensions": [{"Name": "FunctionName", "Value": "rag-query-dev"}],
+      "threshold": 1,
+      "evaluationPeriods": 1,
+      "period": 300,
+      "statistic": "Sum",
+      "comparisonOperator": "GreaterThanOrEqualToThreshold"
+    },
+    {
+      "name": "RAG-Ingest-Errors",
+      "description": "Alert when Ingest Lambda has errors",
+      "metric": "Errors",
+      "namespace": "AWS/Lambda",
+      "dimensions": [{"Name": "FunctionName", "Value": "rag-ingest-dev"}],
+      "threshold": 1,
+      "evaluationPeriods": 1,
+      "period": 300,
+      "statistic": "Sum",
+      "comparisonOperator": "GreaterThanOrEqualToThreshold"
+    },
+    {
+      "name": "RAG-Query-HighLatency",
+      "description": "Alert when Query Lambda is slow (>10s)",
+      "metric": "Duration",
+      "namespace": "AWS/Lambda",
+      "dimensions": [{"Name": "FunctionName", "Value": "rag-query-dev"}],
+      "threshold": 10000,
+      "evaluationPeriods": 3,
+      "period": 300,
+      "statistic": "Average",
+      "comparisonOperator": "GreaterThanThreshold"
+    },
+    {
+      "name": "RAG-API-5xxErrors",
+      "description": "Alert when API returns 5xx errors",
+      "metric": "5XXError",
+      "namespace": "AWS/ApiGateway",
+      "dimensions": [{"Name": "ApiName", "Value": "rag-api-dev"}],
+      "threshold": 1,
+      "evaluationPeriods": 1,
+      "period": 300,
+      "statistic": "Sum",
+      "comparisonOperator": "GreaterThanOrEqualToThreshold"
+    },
+    {
+      "name": "RAG-API-Throttled",
+      "description": "Alert when API requests are being throttled",
+      "metric": "Count",
+      "namespace": "AWS/ApiGateway",
+      "dimensions": [{"Name": "ApiName", "Value": "rag-api-dev"}],
+      "threshold": 100,
+      "evaluationPeriods": 1,
+      "period": 60,
+      "statistic": "Sum",
+      "comparisonOperator": "GreaterThanThreshold"
+    },
+    {
+      "name": "RAG-SQS-DeadLetterQueue",
+      "description": "Alert when messages are stuck in queue",
+      "metric": "ApproximateNumberOfMessagesVisible",
+      "namespace": "AWS/SQS",
+      "dimensions": [{"Name": "QueueName", "Value": "rag-document-processing-dev"}],
+      "threshold": 10,
+      "evaluationPeriods": 3,
+      "period": 300,
+      "statistic": "Average",
+      "comparisonOperator": "GreaterThanThreshold"
+    }
+  ]
+}
