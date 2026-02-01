@@ -1,0 +1,170 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# RAG Documentation Assistant - Monitoring Dashboard"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 1,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "title": "Query Lambda Invocations",
+        "metrics": [
+          ["AWS/Lambda", "Invocations", "FunctionName", "rag-query-dev", {"stat": "Sum", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 8,
+      "y": 1,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "title": "Query Lambda Duration",
+        "metrics": [
+          ["AWS/Lambda", "Duration", "FunctionName", "rag-query-dev", {"stat": "Average", "period": 300}],
+          ["AWS/Lambda", "Duration", "FunctionName", "rag-query-dev", {"stat": "p99", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 16,
+      "y": 1,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "title": "Query Lambda Errors",
+        "metrics": [
+          ["AWS/Lambda", "Errors", "FunctionName", "rag-query-dev", {"stat": "Sum", "period": 300, "color": "#d62728"}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 7,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "title": "Ingest Lambda Invocations",
+        "metrics": [
+          ["AWS/Lambda", "Invocations", "FunctionName", "rag-ingest-dev", {"stat": "Sum", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 8,
+      "y": 7,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "title": "Ingest Lambda Duration",
+        "metrics": [
+          ["AWS/Lambda", "Duration", "FunctionName", "rag-ingest-dev", {"stat": "Average", "period": 300}],
+          ["AWS/Lambda", "Duration", "FunctionName", "rag-ingest-dev", {"stat": "p99", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 16,
+      "y": 7,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "title": "Ingest Lambda Errors",
+        "metrics": [
+          ["AWS/Lambda", "Errors", "FunctionName", "rag-ingest-dev", {"stat": "Sum", "period": 300, "color": "#d62728"}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 13,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "SQS Queue Depth",
+        "metrics": [
+          ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "rag-document-processing-dev", {"stat": "Average", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 13,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "API Gateway Requests",
+        "metrics": [
+          ["AWS/ApiGateway", "Count", "ApiName", "rag-api-dev", {"stat": "Sum", "period": 300}],
+          ["AWS/ApiGateway", "4XXError", "ApiName", "rag-api-dev", {"stat": "Sum", "period": 300, "color": "#ff7f0e"}],
+          ["AWS/ApiGateway", "5XXError", "ApiName", "rag-api-dev", {"stat": "Sum", "period": 300, "color": "#d62728"}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 19,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "API Gateway Latency",
+        "metrics": [
+          ["AWS/ApiGateway", "Latency", "ApiName", "rag-api-dev", {"stat": "Average", "period": 300}],
+          ["AWS/ApiGateway", "Latency", "ApiName", "rag-api-dev", {"stat": "p99", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 19,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Lambda Concurrent Executions",
+        "metrics": [
+          ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "rag-query-dev", {"stat": "Maximum", "period": 300}],
+          ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "rag-ingest-dev", {"stat": "Maximum", "period": 300}]
+        ],
+        "view": "timeSeries",
+        "region": "us-east-1"
+      }
+    }
+  ]
+}
