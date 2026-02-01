@@ -201,11 +201,3 @@ def lambda_handler(event, context):
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': str(e)})
         }
-```
-
-Create `src/lambda/query/requirements.txt`:
-```
-anthropic>=0.40.0
-opensearch-py>=2.4.0
-requests-aws4auth>=1.2.0
-boto3>=1.34.0
