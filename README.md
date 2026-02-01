@@ -225,3 +225,23 @@ MIT
 ---
 
 Built by [Jim Williams](https://www.linkedin.com/in/woodstocksoftware/) | [GitHub](https://github.com/woodstocksoftware)
+
+## Authentication
+
+The API requires an API key for all requests. Include it in the `x-api-key` header:
+```bash
+curl -X POST https://YOUR_API.execute-api.us-east-1.amazonaws.com/dev/query \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"question": "Your question here"}'
+```
+
+### Rate Limits
+
+| Limit | Value |
+|-------|-------|
+| Daily quota | 1,000 requests |
+| Rate limit | 5 requests/second |
+| Burst limit | 10 requests |
+
+To get an API key, deploy your own instance or contact the maintainer.

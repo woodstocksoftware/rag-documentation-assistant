@@ -211,6 +211,8 @@ Resources:
             Path: /query
             Method: post
             RestApiId: !Ref ApiGateway
+            Auth:
+              ApiKeyRequired: true
 
   #############################################
   # Lambda Function - Ingest
@@ -252,17 +254,28 @@ Resources:
               ArnLike:
                 aws:SourceArn: !GetAtt DocumentsBucket.Arn
 
-  #############################################
-  # API Gateway
+#############################################
+  # API Gateway with API Key Authentication
   #############################################
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Sub rag-api-${Environment}
       StageName: !Ref Environment
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: RAG API Usage Plan
+          Quota:
+            Limit: 1000
+            Period: DAY
+          Throttle:
+            BurstLimit: 10
+            RateLimit: 5
       Cors:
         AllowMethods: "'POST, GET, OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
+        AllowHeaders: "'Content-Type,Authorization,x-api-key'"
         AllowOrigin: "'*'"
 
 Outputs:
