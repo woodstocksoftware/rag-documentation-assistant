@@ -245,3 +245,39 @@ curl -X POST https://YOUR_API.execute-api.us-east-1.amazonaws.com/dev/query \
 | Burst limit | 10 requests |
 
 To get an API key, deploy your own instance or contact the maintainer.
+
+## Monitoring & Alerts
+
+### CloudWatch Dashboard
+
+View real-time metrics at:
+```
+https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=RAG-Documentation-Assistant
+```
+
+### Alarms
+
+| Alarm | Condition | Action |
+|-------|-----------|--------|
+| RAG-Query-Errors | Any Lambda errors | Email alert |
+| RAG-Ingest-Errors | Any ingest errors | Email alert |
+| RAG-Query-HighLatency | Avg response > 10s | Email alert |
+| RAG-API-5xxErrors | Any server errors | Email alert |
+| RAG-API-4xxErrors | > 50 client errors/5min | Email alert |
+| RAG-SQS-Backlog | > 10 messages stuck | Email alert |
+| RAG-Lambda-Throttled | Any throttling | Email alert |
+
+### Setting Up Alerts
+```bash
+# Create SNS topic
+aws sns create-topic --name rag-alerts-dev
+
+# Subscribe your email
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-east-1:YOUR_ACCOUNT_ID:rag-alerts-dev \
+  --protocol email \
+  --notification-endpoint your@email.com
+
+# Create alarms
+./scripts/create-alarms.sh
+```
