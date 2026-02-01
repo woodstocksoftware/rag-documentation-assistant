@@ -1,0 +1,287 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: RAG Documentation Assistant - Production deployment on AWS
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+    Description: Anthropic API key for Claude
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Runtime: python3.12
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        OPENSEARCH_ENDPOINT: !GetAtt OpenSearchCollection.CollectionEndpoint
+        ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+
+Resources:
+  #############################################
+  # S3 Bucket for Document Uploads
+  #############################################
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub rag-documents-${AWS::AccountId}-${Environment}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST]
+            AllowedOrigins: ['*']
+            MaxAge: 3000
+
+  #############################################
+  # SQS Queue for Document Processing
+  #############################################
+  DocumentProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub rag-document-processing-${Environment}
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 86400
+
+  #############################################
+  # IAM Roles for Lambda Functions (created first)
+  #############################################
+  QueryFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub rag-query-role-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RAGQueryPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - aoss:APIAccessAll
+                Resource: !Sub arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/*
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+
+  IngestFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub rag-ingest-role-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RAGIngestPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - aoss:APIAccessAll
+                Resource: !Sub arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/*
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub arn:aws:s3:::rag-documents-${AWS::AccountId}-${Environment}/*
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !GetAtt DocumentProcessingQueue.Arn
+
+  #############################################
+  # OpenSearch Serverless Collection
+  #############################################
+  OpenSearchEncryptionPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: !Sub rag-encryption-${Environment}
+      Type: encryption
+      Policy: !Sub >-
+        {
+          "Rules": [
+            {
+              "Resource": ["collection/rag-vectors-${Environment}"],
+              "ResourceType": "collection"
+            }
+          ],
+          "AWSOwnedKey": true
+        }
+
+  OpenSearchNetworkPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: !Sub rag-network-${Environment}
+      Type: network
+      Policy: !Sub >-
+        [
+          {
+            "Rules": [
+              {
+                "Resource": ["collection/rag-vectors-${Environment}"],
+                "ResourceType": "collection"
+              }
+            ],
+            "AllowFromPublic": true
+          }
+        ]
+
+  OpenSearchDataAccessPolicy:
+    Type: AWS::OpenSearchServerless::AccessPolicy
+    DependsOn:
+      - QueryFunctionRole
+      - IngestFunctionRole
+    Properties:
+      Name: !Sub rag-data-access-${Environment}
+      Type: data
+      Policy: !Sub
+        - >-
+          [
+            {
+              "Rules": [
+                {
+                  "Resource": ["collection/rag-vectors-${Environment}"],
+                  "Permission": ["aoss:CreateCollectionItems", "aoss:DeleteCollectionItems", "aoss:UpdateCollectionItems", "aoss:DescribeCollectionItems"],
+                  "ResourceType": "collection"
+                },
+                {
+                  "Resource": ["index/rag-vectors-${Environment}/*"],
+                  "Permission": ["aoss:CreateIndex", "aoss:DeleteIndex", "aoss:UpdateIndex", "aoss:DescribeIndex", "aoss:ReadDocument", "aoss:WriteDocument"],
+                  "ResourceType": "index"
+                }
+              ],
+              "Principal": ["arn:aws:iam::${AWS::AccountId}:user/jim.williams", "${QueryRoleArn}", "${IngestRoleArn}"]
+            }
+          ]
+        - QueryRoleArn: !GetAtt QueryFunctionRole.Arn
+          IngestRoleArn: !GetAtt IngestFunctionRole.Arn
+
+  OpenSearchCollection:
+    Type: AWS::OpenSearchServerless::Collection
+    DependsOn:
+      - OpenSearchEncryptionPolicy
+      - OpenSearchNetworkPolicy
+      - OpenSearchDataAccessPolicy
+    Properties:
+      Name: !Sub rag-vectors-${Environment}
+      Type: VECTORSEARCH
+      Description: Vector store for RAG document embeddings
+
+  #############################################
+  # Lambda Function - Query
+  #############################################
+  QueryFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OpenSearchCollection
+    Properties:
+      FunctionName: !Sub rag-query-${Environment}
+      CodeUri: ../src/lambda/query/
+      Handler: handler.lambda_handler
+      Role: !GetAtt QueryFunctionRole.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /query
+            Method: post
+            RestApiId: !Ref ApiGateway
+
+  #############################################
+  # Lambda Function - Ingest
+  #############################################
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OpenSearchCollection
+    Properties:
+      FunctionName: !Sub rag-ingest-${Environment}
+      CodeUri: ../src/lambda/ingest/
+      Handler: handler.lambda_handler
+      Timeout: 300
+      MemorySize: 1024
+      Role: !GetAtt IngestFunctionRole.Arn
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DocumentProcessingQueue.Arn
+            BatchSize: 1
+
+  #############################################
+  # S3 to SQS Notification
+  #############################################
+  S3ToSQSPermission:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref DocumentProcessingQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt DocumentProcessingQueue.Arn
+            Condition:
+              ArnLike:
+                aws:SourceArn: !GetAtt DocumentsBucket.Arn
+
+  #############################################
+  # API Gateway
+  #############################################
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub rag-api-${Environment}
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'POST, GET, OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+  
+  DocumentsBucket:
+    Description: S3 bucket for document uploads
+    Value: !Ref DocumentsBucket
+  
+  OpenSearchEndpoint:
+    Description: OpenSearch Serverless endpoint
+    Value: !GetAtt OpenSearchCollection.CollectionEndpoint
+  
+  QueryFunctionArn:
+    Description: Query Lambda function ARN
+    Value: !GetAtt QueryFunction.Arn
+  
+  IngestFunctionArn:
+    Description: Ingest Lambda function ARN
+    Value: !GetAtt IngestFunction.Arn

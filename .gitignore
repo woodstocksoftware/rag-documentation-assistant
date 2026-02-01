@@ -15,3 +15,8 @@ data/
 # IDE
 .vscode/
 .idea/
+
+# AWS SAM
+.aws-sam/
+samconfig.toml
+packaged.yaml

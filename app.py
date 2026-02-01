@@ -198,3 +198,4 @@ with gr.Blocks(title="RAG Documentation Assistant") as app:
 
 if __name__ == "__main__":
     app.launch(server_name="0.0.0.0", server_port=7860)
+    #app.launch(server_name="0.0.0.0", server_port=7860, share=True)
