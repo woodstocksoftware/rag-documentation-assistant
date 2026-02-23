@@ -78,6 +78,64 @@ class TestLoadDirectory:
         assert any(d["metadata"]["source"] == "good.txt" for d in docs)
 
 
+class TestLoadPdf:
+    def test_load_pdf_with_text(self, loader, tmp_path):
+        """Create a PDF with actual extractable text using reportlab or pypdf."""
+        from unittest.mock import patch, MagicMock
+
+        pdf_path = tmp_path / "test.pdf"
+        # Create a minimal PDF with pypdf, then mock the text extraction
+        from pypdf import PdfWriter
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        with open(pdf_path, "wb") as f:
+            writer.write(f)
+
+        doc = loader.load(pdf_path)
+        assert doc["metadata"]["file_type"] == ".pdf"
+        assert doc["metadata"]["source"] == "test.pdf"
+        assert doc["metadata"]["page_count"] == 1
+
+    def test_load_pdf_extracts_page_text(self, loader, tmp_path):
+        """Verify that pages with extractable text are captured."""
+        from unittest.mock import patch, MagicMock
+        from pypdf import PdfWriter
+
+        pdf_path = tmp_path / "with_text.pdf"
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        with open(pdf_path, "wb") as f:
+            writer.write(f)
+
+        # Mock PdfReader to return pages with text
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = "Page one content."
+        mock_reader = MagicMock()
+        mock_reader.pages = [mock_page]
+
+        with patch("src.ingestion.loader.PdfReader", return_value=mock_reader):
+            doc = loader.load(pdf_path)
+            assert "Page one content" in doc["text"]
+            assert doc["metadata"]["page_count"] == 1
+
+
+class TestLoadDocx:
+    def test_load_docx(self, loader, tmp_path):
+        from docx import Document as DocxDocument
+
+        docx_path = tmp_path / "test.docx"
+        doc = DocxDocument()
+        doc.add_paragraph("First paragraph.")
+        doc.add_paragraph("Second paragraph.")
+        doc.save(str(docx_path))
+
+        result = loader.load(docx_path)
+        assert "First paragraph" in result["text"]
+        assert "Second paragraph" in result["text"]
+        assert result["metadata"]["file_type"] == ".docx"
+        assert result["metadata"]["page_count"] == 1
+
+
 class TestSupportedExtensions:
     def test_supported_set(self):
         assert DocumentLoader.SUPPORTED_EXTENSIONS == {".txt", ".md", ".pdf", ".docx"}

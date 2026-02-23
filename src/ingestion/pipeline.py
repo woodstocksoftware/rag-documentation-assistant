@@ -61,7 +61,8 @@ class IngestionPipeline:
         print(f"\n📊 Ingestion complete:")
         print(f"   Documents: {len(documents)}")
         print(f"   Chunks: {len(all_chunks)}")
-        print(f"   Avg tokens/chunk: {sum(c['token_count'] for c in all_chunks) // len(all_chunks)}")
+        if all_chunks:
+            print(f"   Avg tokens/chunk: {sum(c['token_count'] for c in all_chunks) // len(all_chunks)}")
         
         return all_chunks
 

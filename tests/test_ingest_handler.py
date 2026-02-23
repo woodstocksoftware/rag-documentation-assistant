@@ -167,6 +167,104 @@ class TestLambdaHandler:
             assert result["processed"] == 2
 
 
+class TestExtractTextPdfDocx:
+    def test_pdf_extraction_blank(self, patch_aws):
+        handler = patch_aws
+        from pypdf import PdfWriter
+        from io import BytesIO
+
+        buf = BytesIO()
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        writer.write(buf)
+        pdf_bytes = buf.getvalue()
+
+        text = handler.extract_text(pdf_bytes, ".pdf")
+        assert isinstance(text, str)
+
+    def test_pdf_extraction_with_text(self, patch_aws):
+        handler = patch_aws
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = "Hello from PDF"
+        mock_reader = MagicMock()
+        mock_reader.pages = [mock_page]
+
+        with patch("pypdf.PdfReader", return_value=mock_reader):
+            text = handler.extract_text(b"fake", ".pdf")
+            assert "Hello from PDF" in text
+
+    def test_docx_extraction(self, patch_aws):
+        handler = patch_aws
+        from docx import Document
+        from io import BytesIO
+
+        doc = Document()
+        doc.add_paragraph("Hello from docx")
+        buf = BytesIO()
+        doc.save(buf)
+        docx_bytes = buf.getvalue()
+
+        text = handler.extract_text(docx_bytes, ".docx")
+        assert "Hello from docx" in text
+
+
+class TestGenerateEmbedding:
+    def test_calls_bedrock(self, patch_aws):
+        handler = patch_aws
+        embedding = handler.generate_embedding("test text")
+        assert isinstance(embedding, list)
+        assert len(embedding) == 1536
+
+    def test_truncates_long_text(self, patch_aws):
+        handler = patch_aws
+        long_text = "x" * 30000
+        handler.generate_embedding(long_text)
+        call_args = handler.bedrock.invoke_model.call_args
+        body = json.loads(call_args[1]["body"])
+        assert len(body["inputText"]) == 20000
+
+
+class TestProcessDocument:
+    def test_processes_txt(self, patch_aws):
+        handler = patch_aws
+        mock_client = MagicMock()
+        mock_client.indices.exists.return_value = True
+        from opensearchpy.helpers import bulk as real_bulk
+
+        with patch.object(handler, "get_opensearch_client", return_value=mock_client), \
+             patch("src.lambda.ingest.handler.bulk", return_value=(1, [])):
+            result = handler.process_document("bucket", "docs/readme.txt")
+            assert result == 1
+
+    def test_processes_md(self, patch_aws):
+        handler = patch_aws
+        mock_client = MagicMock()
+        mock_client.indices.exists.return_value = True
+
+        with patch.object(handler, "get_opensearch_client", return_value=mock_client), \
+             patch("src.lambda.ingest.handler.bulk", return_value=(2, [])):
+            result = handler.process_document("bucket", "docs/guide.md")
+            assert result == 2
+
+    def test_reports_bulk_errors(self, patch_aws):
+        handler = patch_aws
+        mock_client = MagicMock()
+        mock_client.indices.exists.return_value = True
+
+        with patch.object(handler, "get_opensearch_client", return_value=mock_client), \
+             patch("src.lambda.ingest.handler.bulk", return_value=(0, ["error1"])):
+            result = handler.process_document("bucket", "docs/file.txt")
+            assert result == 0
+
+
+class TestGetOpensearchClient:
+    def test_returns_client(self, patch_aws):
+        handler = patch_aws
+        with patch("src.lambda.ingest.handler.OpenSearch") as MockOS:
+            client = handler.get_opensearch_client()
+            MockOS.assert_called_once()
+
+
 class TestEnsureIndexExists:
     def test_creates_index_if_missing(self, patch_aws):
         handler = patch_aws

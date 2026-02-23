@@ -155,6 +155,16 @@ class TestSearchDocuments:
             assert results == []
 
 
+class TestGetOpensearchClient:
+    def test_returns_client(self, patch_aws_and_anthropic):
+        handler = patch_aws_and_anthropic
+        with patch("src.lambda.query.handler.OpenSearch") as MockOS:
+            client = handler.get_opensearch_client()
+            MockOS.assert_called_once()
+            call_kwargs = MockOS.call_args[1]
+            assert call_kwargs["use_ssl"] is True
+
+
 class TestGenerateResponse:
     def test_returns_answer_and_sources(self, patch_aws_and_anthropic):
         handler = patch_aws_and_anthropic
