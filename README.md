@@ -21,6 +21,12 @@ curl -X POST https://your-api.execute-api.us-east-1.amazonaws.com/dev/query \
 }
 ```
 
+## Screenshots
+
+![Gradio Interface](docs/screenshots/interface.png)
+
+![Full Interface](docs/screenshots/interface-full.png)
+
 ## Architecture
 
 ### AWS Production Deployment
