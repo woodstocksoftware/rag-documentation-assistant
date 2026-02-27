@@ -11,11 +11,11 @@ Flow:
 
 import json
 import os
+
 import boto3
 from anthropic import Anthropic
 from opensearchpy import OpenSearch, RequestsHttpConnection
 from requests_aws4auth import AWS4Auth
-
 
 # Initialize clients
 bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
@@ -39,7 +39,7 @@ def get_opensearch_client():
     endpoint = os.environ['OPENSEARCH_ENDPOINT']
     # Remove https:// if present
     host = endpoint.replace('https://', '')
-    
+
     return OpenSearch(
         hosts=[{'host': host, 'port': 443}],
         http_auth=awsauth,
@@ -58,7 +58,7 @@ def generate_embedding(text: str) -> list[float]:
         accept='application/json',
         body=json.dumps({'inputText': text})
     )
-    
+
     result = json.loads(response['body'].read())
     return result['embedding']
 
@@ -67,7 +67,7 @@ def search_documents(query_embedding: list[float], top_k: int = 5) -> list[dict]
     """Search OpenSearch for similar documents."""
     client = get_opensearch_client()
     index_name = 'documents'
-    
+
     query = {
         'size': top_k,
         'query': {
@@ -80,10 +80,10 @@ def search_documents(query_embedding: list[float], top_k: int = 5) -> list[dict]
         },
         '_source': ['text', 'metadata']
     }
-    
+
     try:
         response = client.search(index=index_name, body=query)
-        
+
         results = []
         for hit in response['hits']['hits']:
             results.append({
@@ -91,7 +91,7 @@ def search_documents(query_embedding: list[float], top_k: int = 5) -> list[dict]
                 'metadata': hit['_source']['metadata'],
                 'score': hit['_score']
             })
-        
+
         return results
     except Exception as e:
         print(f"Search error: {e}")
@@ -100,11 +100,11 @@ def search_documents(query_embedding: list[float], top_k: int = 5) -> list[dict]
 
 def generate_response(question: str, context_chunks: list[dict]) -> dict:
     """Generate response using Claude."""
-    
+
     # Build context string
     context_parts = []
     sources = []
-    
+
     for i, chunk in enumerate(context_chunks, 1):
         source = chunk['metadata'].get('source', 'unknown')
         context_parts.append(f"[Source {i}: {source}]\n{chunk['text']}")
@@ -112,9 +112,9 @@ def generate_response(question: str, context_chunks: list[dict]) -> dict:
             'source': source,
             'score': chunk.get('score', 0)
         })
-    
+
     context_string = "\n\n---\n\n".join(context_parts)
-    
+
     system_prompt = """You are a helpful assistant that answers questions based on the provided context.
 
 Rules:
@@ -138,7 +138,7 @@ Please answer the question based on the context provided above."""
         system=system_prompt,
         messages=[{'role': 'user', 'content': user_prompt}]
     )
-    
+
     return {
         'answer': response.content[0].text,
         'sources': sources,
@@ -155,24 +155,24 @@ def lambda_handler(event, context):
         # Parse request body
         body = json.loads(event.get('body', '{}'))
         question = body.get('question', '').strip()
-        
+
         if not question:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'Question is required'})
             }
-        
+
         print(f"Question: {question}")
-        
+
         # Step 1: Generate embedding for the question
         query_embedding = generate_embedding(question)
         print(f"Generated embedding: {len(query_embedding)} dimensions")
-        
+
         # Step 2: Search for relevant chunks
         chunks = search_documents(query_embedding, top_k=5)
         print(f"Found {len(chunks)} relevant chunks")
-        
+
         if not chunks:
             return {
                 'statusCode': 200,
@@ -183,17 +183,17 @@ def lambda_handler(event, context):
                     'usage': {'input_tokens': 0, 'output_tokens': 0}
                 })
             }
-        
+
         # Step 3: Generate response with Claude
         result = generate_response(question, chunks)
         print(f"Generated response: {result['usage']}")
-        
+
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps(result)
         }
-        
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return {

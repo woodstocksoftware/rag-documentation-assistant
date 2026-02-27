@@ -5,23 +5,24 @@ Takes retrieved context and user question, generates answer using Claude.
 """
 
 import os
+
 from anthropic import Anthropic
 
 
 class ResponseGenerator:
     """
     Generates responses using Claude with retrieved context.
-    
+
     This is where RAG comes together:
     1. Receive user question + relevant chunks
     2. Construct a prompt with context
     3. Claude generates a grounded answer
     """
-    
+
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
         """
         Initialize the generator.
-        
+
         Args:
             model: Claude model to use. Sonnet is a good balance of
                    quality and cost for RAG applications.
@@ -29,12 +30,12 @@ class ResponseGenerator:
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable not set")
-        
+
         self.client = Anthropic(api_key=api_key)
         self.model = model
-        
+
         print(f"✓ Generator initialized with {model}")
-    
+
     def generate(
         self,
         question: str,
@@ -43,19 +44,19 @@ class ResponseGenerator:
     ) -> dict:
         """
         Generate a response to the question using retrieved context.
-        
+
         Args:
             question: The user's question
             context_chunks: Retrieved chunks with 'text', 'metadata', 'score'
             max_tokens: Maximum response length
-            
+
         Returns:
             Dict with 'answer', 'sources', and 'usage' keys
         """
         # Build context string with source attribution
         context_parts = []
         sources = []
-        
+
         for i, chunk in enumerate(context_chunks, 1):
             source = chunk["metadata"].get("source", "unknown")
             context_parts.append(f"[Source {i}: {source}]\n{chunk['text']}")
@@ -64,9 +65,9 @@ class ResponseGenerator:
                 "score": chunk.get("score", 0),
                 "chunk_index": chunk["metadata"].get("chunk_index", 0)
             })
-        
+
         context_string = "\n\n---\n\n".join(context_parts)
-        
+
         # Construct the RAG prompt
         system_prompt = """You are a helpful assistant that answers questions based on the provided context.
 
@@ -94,7 +95,7 @@ Please answer the question based on the context provided above."""
                 {"role": "user", "content": user_prompt}
             ]
         )
-        
+
         return {
             "answer": response.content[0].text,
             "sources": sources,
@@ -108,7 +109,7 @@ Please answer the question based on the context provided above."""
 if __name__ == "__main__":
     # Test the generator with mock context
     generator = ResponseGenerator()
-    
+
     # Simulate retrieved chunks
     mock_chunks = [
         {
@@ -122,18 +123,18 @@ if __name__ == "__main__":
             "score": 0.82
         }
     ]
-    
+
     question = "How do I return a product and get a refund?"
-    
+
     print(f"Question: {question}\n")
     print("=" * 50)
-    
+
     result = generator.generate(question, mock_chunks)
-    
+
     print(f"\nAnswer:\n{result['answer']}")
-    print(f"\n--- Sources Used ---")
+    print("\n--- Sources Used ---")
     for src in result["sources"]:
         print(f"  • {src['source']} (relevance: {src['score']:.2f})")
-    print(f"\n--- Token Usage ---")
+    print("\n--- Token Usage ---")
     print(f"  Input: {result['usage']['input_tokens']}")
     print(f"  Output: {result['usage']['output_tokens']}")
