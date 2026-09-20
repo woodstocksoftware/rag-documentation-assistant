@@ -1,6 +1,5 @@
 """Tests for src/ingestion/chunker.py"""
 
-import pytest
 from src.ingestion.chunker import DocumentChunker
 
 

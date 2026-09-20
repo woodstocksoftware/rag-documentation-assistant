@@ -3,10 +3,11 @@
 Mocks all AWS services (S3, Bedrock, OpenSearch) so tests run offline.
 """
 
-import json
 import importlib
+import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 def _import_handler():
@@ -170,8 +171,9 @@ class TestLambdaHandler:
 class TestExtractTextPdfDocx:
     def test_pdf_extraction_blank(self, patch_aws):
         handler = patch_aws
-        from pypdf import PdfWriter
         from io import BytesIO
+
+        from pypdf import PdfWriter
 
         buf = BytesIO()
         writer = PdfWriter()
@@ -195,8 +197,9 @@ class TestExtractTextPdfDocx:
 
     def test_docx_extraction(self, patch_aws):
         handler = patch_aws
-        from docx import Document
         from io import BytesIO
+
+        from docx import Document
 
         doc = Document()
         doc.add_paragraph("Hello from docx")
@@ -229,7 +232,6 @@ class TestProcessDocument:
         handler = patch_aws
         mock_client = MagicMock()
         mock_client.indices.exists.return_value = True
-        from opensearchpy.helpers import bulk as real_bulk
 
         with patch.object(handler, "get_opensearch_client", return_value=mock_client), \
              patch("src.lambda.ingest.handler.bulk", return_value=(1, [])):
@@ -261,7 +263,7 @@ class TestGetOpensearchClient:
     def test_returns_client(self, patch_aws):
         handler = patch_aws
         with patch("src.lambda.ingest.handler.OpenSearch") as MockOS:
-            client = handler.get_opensearch_client()
+            handler.get_opensearch_client()
             MockOS.assert_called_once()
 
 

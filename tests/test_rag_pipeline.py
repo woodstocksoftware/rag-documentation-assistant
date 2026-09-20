@@ -1,7 +1,9 @@
 """Tests for src/query/rag.py"""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from src.query.rag import RAGPipeline
 
 

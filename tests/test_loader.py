@@ -1,7 +1,9 @@
 """Tests for src/ingestion/loader.py"""
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from src.ingestion.loader import DocumentLoader
 
 
@@ -81,7 +83,6 @@ class TestLoadDirectory:
 class TestLoadPdf:
     def test_load_pdf_with_text(self, loader, tmp_path):
         """Create a PDF with actual extractable text using reportlab or pypdf."""
-        from unittest.mock import patch, MagicMock
 
         pdf_path = tmp_path / "test.pdf"
         # Create a minimal PDF with pypdf, then mock the text extraction
@@ -98,7 +99,8 @@ class TestLoadPdf:
 
     def test_load_pdf_extracts_page_text(self, loader, tmp_path):
         """Verify that pages with extractable text are captured."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from pypdf import PdfWriter
 
         pdf_path = tmp_path / "with_text.pdf"

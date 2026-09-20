@@ -1,8 +1,8 @@
 """Tests for src/ingestion/embeddings.py"""
 
-import pytest
-from unittest.mock import patch, MagicMock
+
 import numpy as np
+import pytest
 
 
 class TestEmbeddingModel:

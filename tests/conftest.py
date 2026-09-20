@@ -2,10 +2,9 @@
 Shared fixtures for the RAG documentation assistant test suite.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 
 # ── Document fixtures ──────────────────────────────────────────────
 
@@ -120,8 +119,8 @@ def mock_anthropic_response():
 @pytest.fixture
 def mock_bedrock_response():
     """Build a mock Bedrock invoke_model response."""
-    import json
     import io
+    import json
 
     def _build(embedding=None):
         if embedding is None:

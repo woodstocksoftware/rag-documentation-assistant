@@ -1,6 +1,7 @@
 """Tests for src/shared/vector_store.py"""
 
 import pytest
+
 from src.shared.vector_store import VectorStore
 
 

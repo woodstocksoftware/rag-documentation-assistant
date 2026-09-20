@@ -4,10 +4,11 @@ These tests mock all AWS services (Bedrock, OpenSearch) and the Anthropic client
 so they can run without credentials or network access.
 """
 
-import json
 import importlib
+import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 def _import_handler():
@@ -159,7 +160,7 @@ class TestGetOpensearchClient:
     def test_returns_client(self, patch_aws_and_anthropic):
         handler = patch_aws_and_anthropic
         with patch("src.lambda.query.handler.OpenSearch") as MockOS:
-            client = handler.get_opensearch_client()
+            handler.get_opensearch_client()
             MockOS.assert_called_once()
             call_kwargs = MockOS.call_args[1]
             assert call_kwargs["use_ssl"] is True

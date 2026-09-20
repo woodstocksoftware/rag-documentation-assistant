@@ -1,7 +1,8 @@
 """Tests for src/ingestion/pipeline.py"""
 
+
 import pytest
-from pathlib import Path
+
 from src.ingestion.pipeline import IngestionPipeline
 
 
