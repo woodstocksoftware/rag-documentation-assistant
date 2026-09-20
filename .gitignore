@@ -20,3 +20,14 @@ data/
 .aws-sam/
 samconfig.toml
 packaged.yaml
+
+# Build/test artifacts
+report/
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.firecrawl/
+*.tsbuildinfo
+.claude/settings.local.json
+.claude/worktrees/
