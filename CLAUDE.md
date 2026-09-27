@@ -1,7 +1,7 @@
 # CLAUDE.md — RAG Documentation Assistant
 
 > **Purpose:** Production-ready RAG system with document ingestion, semantic search, and cited answers
-> **Owner:** Jim Williams - Woodstock Software LLC
+> **Owner:** Jim Williams - Desert's Edge Solutions LLC
 > **Repo:** woodstocksoftware/rag-documentation-assistant (public)
 
 ---
