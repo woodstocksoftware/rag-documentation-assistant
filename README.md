@@ -7,6 +7,8 @@ A production-ready Retrieval-Augmented Generation (RAG) system that answers ques
 ![Claude](https://img.shields.io/badge/LLM-Claude-blueviolet)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+Part of [Dark Agent Factory](https://darkagentfactory.ai), built by Desert's Edge Solutions.
+
 ## What It Does
 
 Upload documents → Ask questions → Get accurate, cited answers.
