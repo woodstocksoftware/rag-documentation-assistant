@@ -26,7 +26,7 @@ durationpy==0.10
 Events==0.5
 fastapi==0.141.1
 ffmpy==1.0.0
-filelock==3.24.3
+filelock==4.2.1
 flatbuffers==25.12.19
 fsspec==2026.6.0
 googleapis-common-protos==1.72.0
